@@ -37,7 +37,13 @@ class Application(web.Application):
 
 
 
+    async def handle_get_service_stats(self, request):
+        return
 
+    async def handle_get_pipeline_stats(self, request):
+        return
 
 
 app = Application()
+app.router.add_get('/service/stats', app.handle_get_service_stats)
+app.router.add_get('/pipeline/stats', app.handle_get_pipeline_stats)
