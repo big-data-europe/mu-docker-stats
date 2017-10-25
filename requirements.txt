@@ -1,0 +1,4 @@
+aiodockerpy == 0.8.0
+aiohttp < 2.3
+aiosparql < 0.11
+jsonapi-requests == 0.4.0
