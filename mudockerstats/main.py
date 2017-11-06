@@ -43,14 +43,14 @@ class Application(web.Application):
         """
         Get the CPU & Memory stats of the most recent stats event
         linked to a given service inside a pipeline.
- 
+
         :pipeline: name of the pipeline containing the service
         :service_name: service name
 
         Notes:
             If the stack is created using a docker-compose file already
-            in the DB, the pipeline will be empy since service names 
-            will have the form '/service' , while if they are created from 
+            in the DB, the pipeline will be empy since service names
+            will have the form '/service' , while if they are created from
             a url, they will have the form '/pipeline_service_1'
 
         Returns: An object with the form:
@@ -69,7 +69,7 @@ class Application(web.Application):
          }
 
         """
-        stats_service_name = "/{}_{}_1".format(pipeline, service_name) if pipeline is not None else "/{}".format(service_name)
+        stats_service_name = "/{}_{}_1".format(pipeline.lower(), service_name) if pipeline is not None else "/{}".format(service_name)
         result = await self.sparql.query("""
             PREFIX swarmui: <http://swarmui.semte.ch/vocabularies/core/>
             SELECT DISTINCT ?systemCpuUsage ?totalUsage ?presystemCpuUsage ?pretotalUsage ?memoryUsage ?memoryLimit count(?perCpuUsage) as ?countPerCpuUsage
@@ -89,7 +89,7 @@ class Application(web.Application):
                 ?cpuStats swarmui:cpuUsage ?cpuUsage .
                 ?cpuUsage swarmui:totalUsage ?totalUsage .
                 ?cpuUsage swarmui:percpuUsage ?perCpuUsage .
-                
+
                 ?precpuStats swarmui:systemCpuUsage ?presystemCpuUsage .
                 ?precpuStats swarmui:cpuUsage ?precpuUsage .
                 ?precpuUsage swarmui:totalUsage ?pretotalUsage .
@@ -106,14 +106,14 @@ class Application(web.Application):
         Return a JSON-API representation of the calculated
         CPU and memory stats for a given service:
             - % CPU
-            - Memory used 
+            - Memory used
             - Memory limit
             - % Memory
 
-        :service_stats: service stats extracted from the DB. 
+        :service_stats: service stats extracted from the DB.
 
         Return: json-api object
-        """     
+        """
         cpuPercent = 0.0
         try:
             cpuDelta = float(service_stats['totalUsage']) - float(service_stats['pretotalUsage'])
@@ -130,7 +130,7 @@ class Application(web.Application):
 
         if (systemDelta > 0.0 and cpuDelta > 0.0):
             cpuPercent = (cpuDelta / systemDelta) * float(perCpuUsage) * 100.0
-        
+
         return json.dumps({
             'data': {
                 'type': 'service-stats',
@@ -149,7 +149,7 @@ class Application(web.Application):
         """
         Handle a get request and return the stats of a given
         service in a JSON-API compliant format
-        
+
         Arguments:
             request: the request object
         """
