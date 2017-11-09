@@ -155,6 +155,7 @@ class Application(web.Application):
             - Memory used
             - Memory limit
             - % Memory
+            - Time of the read
 
         :service_stats: service stats extracted from the DB.
 
