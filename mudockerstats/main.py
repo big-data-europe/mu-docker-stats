@@ -111,9 +111,40 @@ class Application(web.Application):
             }
             """, escaped_result=escaped_result)
         stats = result['results']['bindings']
-        names = { stat['name']['value']: [ { stat['name']['value']: stats[stat]['value'] for stat in stats if stat is not 'name'} ] for stat in stats }
-        logger.info(names)
-        return { stat['name']['value']: stats[stat]['value'] for stat in stats }
+        result = [{ 'name': service['name']['value'], 
+                    'stats': [ {serv: service[serv]['value'] for serv in service 
+                                                             if serv != 'name'}] } 
+                  for service in stats]
+        return result
+
+
+    def calculate_stats(self, stats):
+        """
+        Calculate cpu stats and return a  dictionary with the data.
+        """
+        cpuPercent = 0.0
+        try:
+            cpuDelta = float(stats['totalUsage']) - float(stats['pretotalUsage'])
+            systemDelta = float(stats['systemCpuUsage']) - float(stats['presystemCpuUsage'])
+            memoryUsage = float(stats['memoryUsage'])
+            memoryLimit = float(stats['memoryLimit'])
+            perCpuUsage = int(stats['countPerCpuUsage'])
+        except ValueError:
+            return json.dumps({
+                "status": 500,
+                "title": "Error converting into float",
+                "detail": "Error converting into float"
+            })
+
+        if (systemDelta > 0.0 and cpuDelta > 0.0):
+            cpuPercent = (cpuDelta / systemDelta) * float(perCpuUsage) * 100.0
+        
+        return {
+            'cpu-percentage': cpuPercent,
+            'mem-usage': memoryUsage,
+            'mem-limit': memoryLimit,
+            'mem-percentage': memoryUsage / memoryLimit * 100.0
+        }
 
 
     async def get_json_stats(self, service_stats):
@@ -129,35 +160,12 @@ class Application(web.Application):
 
         Return: json-api object
         """
-        cpuPercent = 0.0
-        try:
-            cpuDelta = float(service_stats['totalUsage']) - float(service_stats['pretotalUsage'])
-            systemDelta = float(service_stats['systemCpuUsage']) - float(service_stats['presystemCpuUsage'])
-            memoryUsage = float(service_stats['memoryUsage'])
-            memoryLimit = float(service_stats['memoryLimit'])
-            perCpuUsage = int(service_stats['countPerCpuUsage'])
-        except ValueError:
-            return json.dumps({
-                "status": 500,
-                "title": "Error converting into float",
-                "detail": "Error converting into float"
-            })
-
-        if (systemDelta > 0.0 and cpuDelta > 0.0):
-            cpuPercent = (cpuDelta / systemDelta) * float(perCpuUsage) * 100.0
-
-        return json.dumps({
-            'data': {
-                'type': 'service-stats',
-                'id': uuid.uuid4().hex,
-                'attributes': {
-                    'cpu-percentage': cpuPercent,
-                    'mem-usage': memoryUsage,
-                    'mem-limit': memoryLimit,
-                    'mem-percentage': memoryUsage / memoryLimit * 100.0
-                }
-            }
-        })
+        result = [ {'name': service['name'], 
+                    'stats': [(lambda x, y: (x.update(y), x))(self.calculate_stats(stat), 
+                                                             { 'read-date': stat['readdate']})[1] 
+                               for stat in service['stats']] } 
+                for service in service_stats]
+        return json.dumps(result)
 
 
     async def handle_get_service_stats(self, request):
