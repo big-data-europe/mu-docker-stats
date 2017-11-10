@@ -147,7 +147,7 @@ class Application(web.Application):
         }
 
 
-    async def get_json_stats(self, service_stats):
+    async def get_stats_object(self, service_stats):
         """
         Return a JSON-API representation of the calculated
         CPU and memory stats for a given service:
@@ -166,7 +166,7 @@ class Application(web.Application):
                                                              { 'read-date': stat['readdate']})[1] 
                                for stat in service['stats']] } 
                 for service in service_stats]
-        return json.dumps(result)
+        return result
 
 
     async def handle_get_service_stats(self, request):
@@ -181,8 +181,8 @@ class Application(web.Application):
             pipelines = request.GET['pipelines'].split(',')
             service_names = request.GET['services'].split(',')
             service_stats = await self.get_service_stats(pipelines, service_names)
-            json_response = await self.get_json_stats(service_stats)
-            return web.Response(body=json_response)
+            stats_object = await self.get_stats_object(service_stats)
+            return web.json_response(stats_object, content_type='application/json')
         except KeyError:
             raise web.HTTPInternalServerError(body=json.dumps({
                 "status": 500,
