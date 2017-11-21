@@ -77,20 +77,13 @@ class Application(web.Application):
             WHERE
             {
                 {
-                    SELECT ?name MAX(?readdate) as ?readdate
+                    SELECT DISTINCT ?name MAX(?readdate) as ?readdate
                     WHERE
                     {
-                        {
-                            SELECT DISTINCT ?name ?readdate 
-                            FROM {{graph}}
-                            WHERE {
-                                ?stats a swarmui:Stats .
-                                ?stats swarmui:name ?name .
-                                FILTER(?name IN({{escaped_result}}))
-                                ?stats swarmui:read ?readdate .
-                            }
-                            ORDER BY ?name
-                        }
+                        ?stats a swarmui:Stats .
+                        ?stats swarmui:name ?name .
+                        FILTER(?name IN({{escaped_result}}))
+                        ?stats swarmui:read ?readdate .
                     }
                     GROUP BY ?name
                 }
